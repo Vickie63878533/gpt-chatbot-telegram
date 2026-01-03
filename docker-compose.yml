@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  telegram-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: telegram-bot-go
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      # Required
+      - TELEGRAM_AVAILABLE_TOKENS=${TELEGRAM_AVAILABLE_TOKENS}
+      
+      # AI Provider Configuration (at least one required)
+      - AI_PROVIDER=${AI_PROVIDER:-auto}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - AZURE_API_KEY=${AZURE_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - CLOUDFLARE_ACCOUNT_ID=${CLOUDFLARE_ACCOUNT_ID:-}
+      - CLOUDFLARE_TOKEN=${CLOUDFLARE_TOKEN:-}
+      
+      # Optional Configuration
+      - LANGUAGE=${LANGUAGE:-zh-cn}
+      - STREAM_MODE=${STREAM_MODE:-true}
+      - SAFE_MODE=${SAFE_MODE:-true}
+      - DEBUG_MODE=${DEBUG_MODE:-false}
+      - DB_PATH=/app/data/bot.db
+      - PORT=8080
+      
+      # Access Control
+      - I_AM_A_GENEROUS_PERSON=${I_AM_A_GENEROUS_PERSON:-false}
+      - CHAT_WHITE_LIST=${CHAT_WHITE_LIST:-}
+      - CHAT_GROUP_WHITE_LIST=${CHAT_GROUP_WHITE_LIST:-}
+      
+      # History Configuration
+      - MAX_HISTORY_LENGTH=${MAX_HISTORY_LENGTH:-20}
+      - AUTO_TRIM_HISTORY=${AUTO_TRIM_HISTORY:-true}
+      
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - bot-network
+
+networks:
+  bot-network:
+    driver: bridge
