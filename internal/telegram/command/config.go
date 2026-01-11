@@ -76,7 +76,7 @@ func (c *SetenvCommand) Handle(message *tgbotapi.Message, args string, ctx *conf
 	}
 
 	// Send confirmation
-	text := fmt.Sprintf("‚úÖ Configuration updated:\n`%s` = `%s`", key, value)
+	text := fmt.Sprintf("‚ú?Configuration updated:\n`%s` = `%s`", key, value)
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	msg.ParseMode = c.config.DefaultParseMode
 
@@ -165,13 +165,13 @@ func (c *SetenvsCommand) Handle(message *tgbotapi.Message, args string, ctx *con
 	// Build response
 	var sb strings.Builder
 	if len(updated) > 0 {
-		sb.WriteString("‚úÖ Configuration updated:\n")
+		sb.WriteString("‚ú?Configuration updated:\n")
 		for _, key := range updated {
 			sb.WriteString(fmt.Sprintf("- `%s`\n", key))
 		}
 	}
 	if len(errors) > 0 {
-		sb.WriteString("\n‚ùå Errors:\n")
+		sb.WriteString("\n‚ù?Errors:\n")
 		for _, err := range errors {
 			sb.WriteString(fmt.Sprintf("- %s\n", err))
 		}
@@ -252,7 +252,7 @@ func (c *DelenvCommand) Handle(message *tgbotapi.Message, args string, ctx *conf
 	}
 
 	// Send confirmation
-	text := fmt.Sprintf("‚úÖ Configuration deleted:\n`%s`", key)
+	text := fmt.Sprintf("‚ú?Configuration deleted:\n`%s`", key)
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	msg.ParseMode = c.config.DefaultParseMode
 
@@ -318,7 +318,7 @@ func (c *ClearenvCommand) Handle(message *tgbotapi.Message, args string, ctx *co
 	}
 
 	// Send confirmation
-	text := "‚úÖ All user configuration cleared (locked keys preserved)"
+	text := "‚ú?All user configuration cleared (locked keys preserved)"
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	msg.ParseMode = c.config.DefaultParseMode
 

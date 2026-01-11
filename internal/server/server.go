@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/tbxark/ChatGPT-Telegram-Workers/go_version/internal/config"
+	"github.com/tbxark/ChatGPT-Telegram-Workers/go_version/internal/manager"
 	"github.com/tbxark/ChatGPT-Telegram-Workers/go_version/internal/storage"
 )
 
@@ -59,4 +60,13 @@ func (s *Server) setupRoutes() {
 	s.router.HandleFunc("/", s.handleRoot)
 	s.router.HandleFunc("/init", s.handleInit)
 	s.router.HandleFunc("/telegram/", s.handleTelegram)
+
+	// Register manager routes if enabled
+	if s.config.ManagerEnabled {
+		log.Println("Manager is enabled, registering manager routes...")
+		managerServer := manager.New(s.config, s.storage)
+		managerServer.RegisterRoutes(s.router)
+	} else {
+		log.Println("Manager is disabled")
+	}
 }

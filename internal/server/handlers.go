@@ -10,6 +10,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/tbxark/ChatGPT-Telegram-Workers/go_version/internal/config"
 	"github.com/tbxark/ChatGPT-Telegram-Workers/go_version/internal/i18n"
+	"github.com/tbxark/ChatGPT-Telegram-Workers/go_version/internal/sillytavern"
 	"github.com/tbxark/ChatGPT-Telegram-Workers/go_version/internal/telegram/api"
 	"github.com/tbxark/ChatGPT-Telegram-Workers/go_version/internal/telegram/command"
 )
@@ -171,7 +172,7 @@ func (s *Server) generateWelcomePage() string {
 <body>
     <div class="container">
         <h1>🤖 Telegram Bot - Go Version</h1>
-        <div class="status">✓ Running</div>
+        <div class="status">�?Running</div>
         
         <div class="info">
             <div class="info-item">
@@ -314,6 +315,30 @@ func (s *Server) getCommandScopes() map[string][]tgbotapi.BotCommand {
 		command.NewModelsCommand(s.config, i18nInstance),
 		command.NewSystemCommand(s.config, i18nInstance),
 	)
+
+	// Register SillyTavern commands if context manager is available
+	if s.config.SillyTavernContextManager != nil {
+		contextManager, ok := s.config.SillyTavernContextManager.(*sillytavern.ContextManager)
+		if ok {
+			registry.RegisterAll(
+				command.NewClearCommand(s.config, contextManager),
+				command.NewShareCommand(s.config, contextManager),
+			)
+			log.Printf("SillyTavern commands registered: /clear, /share")
+		}
+	}
+
+	// Register login command (doesn't require context manager)
+	registry.RegisterAll(
+		command.NewLoginCommand(s.config),
+	)
+	log.Printf("Login command registered: /login")
+
+	// Register clear_all command (admin only)
+	registry.RegisterAll(
+		command.NewClearAllCommand(s.config),
+	)
+	log.Printf("Admin command registered: /clear_all_chat")
 
 	// Register configuration commands with permission control
 	registry.RegisterConfigCommand(command.NewSetenvCommand(s.config, i18nInstance))
@@ -535,10 +560,10 @@ func (s *Server) generateInitResultPage(domain string, result map[string]map[str
 				}
 
 				statusClass := "error"
-				statusText := "❌ Failed"
+				statusText := "�?Failed"
 				if isOk {
 					statusClass = "success"
-					statusText = "✅ Success"
+					statusText = "�?Success"
 				}
 
 				html += fmt.Sprintf(`

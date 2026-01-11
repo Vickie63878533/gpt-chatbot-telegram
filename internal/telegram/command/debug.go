@@ -45,7 +45,7 @@ func (c *SystemCommand) NeedAuth() AuthChecker {
 func (c *SystemCommand) Handle(message *tgbotapi.Message, args string, ctx *config.WorkerContext) error {
 	var sb strings.Builder
 
-	sb.WriteString("🖥️ System Information\n\n")
+	sb.WriteString("🖥�?System Information\n\n")
 
 	// Basic info
 	sb.WriteString("**Runtime:**\n")

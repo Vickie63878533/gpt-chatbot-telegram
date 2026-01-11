@@ -216,6 +216,51 @@
 - **可选值**: `zh-cn`, `en`, `pt`, `zh-hant`
 - **描述**: 界面语言
 
+## SillyTavern 集成配置
+
+### 上下文管理
+
+#### MAX_CONTEXT_LENGTH
+- **类型**: 整数
+- **默认值**: `8000`
+- **描述**: 最大上下文长度（以 tokens 计），超过此长度将触发自动摘要
+- **示例**: `MAX_CONTEXT_LENGTH=8000`
+
+#### SUMMARY_THRESHOLD
+- **类型**: 浮点数
+- **默认值**: `0.8`
+- **范围**: `0.0` - `1.0`
+- **描述**: 摘要触发阈值，当上下文长度达到 MAX_CONTEXT_LENGTH 的此百分比时触发摘要
+- **示例**: `SUMMARY_THRESHOLD=0.8` （当上下文达到 6400 tokens 时触发摘要）
+
+#### MIN_RECENT_PAIRS
+- **类型**: 整数
+- **默认值**: `2`
+- **描述**: 摘要后保留的最小最近消息对数（user/assistant 对）
+- **示例**: `MIN_RECENT_PAIRS=2`
+
+### Web 管理器配置
+
+#### MANAGER_PORT
+- **类型**: 整数
+- **默认值**: `8081`
+- **描述**: Web 管理器界面的 HTTP 服务端口
+- **示例**: `MANAGER_PORT=8081`
+
+#### MANAGER_ENABLED
+- **类型**: 布尔值
+- **默认值**: `true`
+- **描述**: 是否启用 Web 管理器界面
+- **示例**: `MANAGER_ENABLED=true`
+
+### Telegraph 集成
+
+#### TELEGRAPH_ENABLED
+- **类型**: 布尔值
+- **默认值**: `true`
+- **描述**: 是否启用 Telegraph 分享功能（用于 /share 命令）
+- **示例**: `TELEGRAPH_ENABLED=true`
+
 ## 完整配置示例
 
 ### 基础配置（SQLite）
@@ -246,6 +291,14 @@ SAFE_MODE="true"
 
 # 语言配置
 LANGUAGE="zh-cn"
+
+# SillyTavern 集成配置
+MAX_CONTEXT_LENGTH=8000
+SUMMARY_THRESHOLD=0.8
+MIN_RECENT_PAIRS=2
+MANAGER_PORT=8081
+MANAGER_ENABLED=true
+TELEGRAPH_ENABLED=true
 ```
 
 ### MySQL 数据库配置
@@ -261,6 +314,14 @@ DSN="mysql://root:password@localhost:3306/telegram_bot"
 # 用户设置权限控制
 ENABLE_USER_SETTING=false
 CHAT_ADMIN_KEY="123456789,987654321"
+
+# SillyTavern 集成配置
+MAX_CONTEXT_LENGTH=10000
+SUMMARY_THRESHOLD=0.75
+MIN_RECENT_PAIRS=3
+MANAGER_PORT=8081
+MANAGER_ENABLED=true
+TELEGRAPH_ENABLED=true
 
 # 其他配置...
 ```
@@ -278,6 +339,14 @@ DSN="postgres://user:password@localhost:5432/telegram_bot"
 # 用户设置权限控制
 ENABLE_USER_SETTING=false
 CHAT_ADMIN_KEY="123456789"
+
+# SillyTavern 集成配置
+MAX_CONTEXT_LENGTH=8000
+SUMMARY_THRESHOLD=0.8
+MIN_RECENT_PAIRS=2
+MANAGER_PORT=8081
+MANAGER_ENABLED=true
+TELEGRAPH_ENABLED=true
 
 # 其他配置...
 ```

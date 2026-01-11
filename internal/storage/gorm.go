@@ -47,6 +47,12 @@ func NewStorage(dsn string, dbPath string) (Storage, error) {
 		&UserConfiguration{},
 		&MessageIDs{},
 		&GroupAdmins{},
+		&CharacterCard{},
+		&WorldBook{},
+		&WorldBookEntry{},
+		&Preset{},
+		&RegexPattern{},
+		&LoginToken{},
 	); err != nil {
 		return nil, fmt.Errorf("failed to migrate database schema: %w", err)
 	}
@@ -350,6 +356,552 @@ func (s *GORMStorage) CleanupExpired() error {
 	if result.Error != nil {
 		return fmt.Errorf("failed to cleanup expired data: %w", result.Error)
 	}
+
+	// Delete expired login tokens
+	if err := s.CleanupExpiredTokens(); err != nil {
+		return fmt.Errorf("failed to cleanup expired tokens: %w", err)
+	}
+
+	return nil
+}
+
+// Character Card Operations
+
+// CreateCharacterCard creates a new character card
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) CreateCharacterCard(card *CharacterCard) error {
+	result := s.db.Create(card)
+	if result.Error != nil {
+		return fmt.Errorf("failed to create character card: %w", result.Error)
+	}
+	return nil
+}
+
+// GetCharacterCard retrieves a character card by ID
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) GetCharacterCard(id uint) (*CharacterCard, error) {
+	var card CharacterCard
+	result := s.db.First(&card, id)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("character card not found")
+		}
+		return nil, fmt.Errorf("failed to get character card: %w", result.Error)
+	}
+	return &card, nil
+}
+
+// ListCharacterCards lists all character cards for a user (or global if userID is nil)
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) ListCharacterCards(userID *int64) ([]*CharacterCard, error) {
+	var cards []*CharacterCard
+	query := s.db
+
+	if userID != nil {
+		// Get user's cards and global cards
+		query = query.Where("user_id = ? OR user_id IS NULL", *userID)
+	} else {
+		// Get only global cards
+		query = query.Where("user_id IS NULL")
+	}
+
+	result := query.Order("created_at DESC").Find(&cards)
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to list character cards: %w", result.Error)
+	}
+
+	return cards, nil
+}
+
+// UpdateCharacterCard updates an existing character card
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) UpdateCharacterCard(card *CharacterCard) error {
+	result := s.db.Save(card)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update character card: %w", result.Error)
+	}
+	return nil
+}
+
+// DeleteCharacterCard deletes a character card by ID
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) DeleteCharacterCard(id uint) error {
+	result := s.db.Delete(&CharacterCard{}, id)
+	if result.Error != nil {
+		return fmt.Errorf("failed to delete character card: %w", result.Error)
+	}
+	return nil
+}
+
+// GetActiveCharacterCard retrieves the active character card for a user
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) GetActiveCharacterCard(userID *int64) (*CharacterCard, error) {
+	var card CharacterCard
+	query := s.db.Where("is_active = ?", true)
+
+	if userID != nil {
+		query = query.Where("user_id = ?", *userID)
+	} else {
+		query = query.Where("user_id IS NULL")
+	}
+
+	result := query.First(&card)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, nil // No active card
+		}
+		return nil, fmt.Errorf("failed to get active character card: %w", result.Error)
+	}
+
+	return &card, nil
+}
+
+// ActivateCharacterCard activates a character card and deactivates others
+// Uses transaction to ensure atomicity and GORM's parameterized queries
+func (s *GORMStorage) ActivateCharacterCard(userID *int64, cardID uint) error {
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		// Deactivate all cards for this user
+		query := tx.Model(&CharacterCard{})
+		if userID != nil {
+			query = query.Where("user_id = ?", *userID)
+		} else {
+			query = query.Where("user_id IS NULL")
+		}
+
+		if err := query.Update("is_active", false).Error; err != nil {
+			return fmt.Errorf("failed to deactivate cards: %w", err)
+		}
+
+		// Activate the specified card
+		if err := tx.Model(&CharacterCard{}).Where("id = ?", cardID).Update("is_active", true).Error; err != nil {
+			return fmt.Errorf("failed to activate card: %w", err)
+		}
+
+		return nil
+	})
+}
+
+// World Book Operations
+
+// CreateWorldBook creates a new world book
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) CreateWorldBook(book *WorldBook) error {
+	result := s.db.Create(book)
+	if result.Error != nil {
+		return fmt.Errorf("failed to create world book: %w", result.Error)
+	}
+	return nil
+}
+
+// GetWorldBook retrieves a world book by ID
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) GetWorldBook(id uint) (*WorldBook, error) {
+	var book WorldBook
+	result := s.db.First(&book, id)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("world book not found")
+		}
+		return nil, fmt.Errorf("failed to get world book: %w", result.Error)
+	}
+	return &book, nil
+}
+
+// ListWorldBooks lists all world books for a user (or global if userID is nil)
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) ListWorldBooks(userID *int64) ([]*WorldBook, error) {
+	var books []*WorldBook
+	query := s.db
+
+	if userID != nil {
+		// Get user's books and global books
+		query = query.Where("user_id = ? OR user_id IS NULL", *userID)
+	} else {
+		// Get only global books
+		query = query.Where("user_id IS NULL")
+	}
+
+	result := query.Order("created_at DESC").Find(&books)
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to list world books: %w", result.Error)
+	}
+
+	return books, nil
+}
+
+// UpdateWorldBook updates an existing world book
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) UpdateWorldBook(book *WorldBook) error {
+	result := s.db.Save(book)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update world book: %w", result.Error)
+	}
+	return nil
+}
+
+// DeleteWorldBook deletes a world book by ID
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) DeleteWorldBook(id uint) error {
+	result := s.db.Delete(&WorldBook{}, id)
+	if result.Error != nil {
+		return fmt.Errorf("failed to delete world book: %w", result.Error)
+	}
+	return nil
+}
+
+// GetActiveWorldBook retrieves the active world book for a user
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) GetActiveWorldBook(userID *int64) (*WorldBook, error) {
+	var book WorldBook
+	query := s.db.Where("is_active = ?", true)
+
+	if userID != nil {
+		query = query.Where("user_id = ?", *userID)
+	} else {
+		query = query.Where("user_id IS NULL")
+	}
+
+	result := query.First(&book)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, nil // No active book
+		}
+		return nil, fmt.Errorf("failed to get active world book: %w", result.Error)
+	}
+
+	return &book, nil
+}
+
+// ActivateWorldBook activates a world book and deactivates others
+// Uses transaction to ensure atomicity and GORM's parameterized queries
+func (s *GORMStorage) ActivateWorldBook(userID *int64, bookID uint) error {
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		// Deactivate all books for this user
+		query := tx.Model(&WorldBook{})
+		if userID != nil {
+			query = query.Where("user_id = ?", *userID)
+		} else {
+			query = query.Where("user_id IS NULL")
+		}
+
+		if err := query.Update("is_active", false).Error; err != nil {
+			return fmt.Errorf("failed to deactivate books: %w", err)
+		}
+
+		// Activate the specified book
+		if err := tx.Model(&WorldBook{}).Where("id = ?", bookID).Update("is_active", true).Error; err != nil {
+			return fmt.Errorf("failed to activate book: %w", err)
+		}
+
+		return nil
+	})
+}
+
+// World Book Entry Operations
+
+// CreateWorldBookEntry creates a new world book entry
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) CreateWorldBookEntry(entry *WorldBookEntry) error {
+	result := s.db.Create(entry)
+	if result.Error != nil {
+		return fmt.Errorf("failed to create world book entry: %w", result.Error)
+	}
+	return nil
+}
+
+// GetWorldBookEntry retrieves a world book entry by ID
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) GetWorldBookEntry(id uint) (*WorldBookEntry, error) {
+	var entry WorldBookEntry
+	result := s.db.First(&entry, id)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("world book entry not found")
+		}
+		return nil, fmt.Errorf("failed to get world book entry: %w", result.Error)
+	}
+	return &entry, nil
+}
+
+// ListWorldBookEntries lists all entries for a world book
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) ListWorldBookEntries(worldBookID uint) ([]*WorldBookEntry, error) {
+	var entries []*WorldBookEntry
+	result := s.db.Where("world_book_id = ?", worldBookID).Order("`order` ASC").Find(&entries)
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to list world book entries: %w", result.Error)
+	}
+	return entries, nil
+}
+
+// UpdateWorldBookEntry updates an existing world book entry
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) UpdateWorldBookEntry(entry *WorldBookEntry) error {
+	result := s.db.Save(entry)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update world book entry: %w", result.Error)
+	}
+	return nil
+}
+
+// DeleteWorldBookEntry deletes a world book entry by ID
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) DeleteWorldBookEntry(id uint) error {
+	result := s.db.Delete(&WorldBookEntry{}, id)
+	if result.Error != nil {
+		return fmt.Errorf("failed to delete world book entry: %w", result.Error)
+	}
+	return nil
+}
+
+// Preset Operations
+
+// CreatePreset creates a new preset
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) CreatePreset(preset *Preset) error {
+	result := s.db.Create(preset)
+	if result.Error != nil {
+		return fmt.Errorf("failed to create preset: %w", result.Error)
+	}
+	return nil
+}
+
+// GetPreset retrieves a preset by ID
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) GetPreset(id uint) (*Preset, error) {
+	var preset Preset
+	result := s.db.First(&preset, id)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("preset not found")
+		}
+		return nil, fmt.Errorf("failed to get preset: %w", result.Error)
+	}
+	return &preset, nil
+}
+
+// ListPresets lists all presets for a user and API type (or global if userID is nil)
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) ListPresets(userID *int64, apiType string) ([]*Preset, error) {
+	var presets []*Preset
+	query := s.db
+
+	if userID != nil {
+		// Get user's presets and global presets
+		query = query.Where("user_id = ? OR user_id IS NULL", *userID)
+	} else {
+		// Get only global presets
+		query = query.Where("user_id IS NULL")
+	}
+
+	// Filter by API type if specified
+	if apiType != "" {
+		query = query.Where("api_type = ?", apiType)
+	}
+
+	result := query.Order("created_at DESC").Find(&presets)
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to list presets: %w", result.Error)
+	}
+
+	return presets, nil
+}
+
+// UpdatePreset updates an existing preset
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) UpdatePreset(preset *Preset) error {
+	result := s.db.Save(preset)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update preset: %w", result.Error)
+	}
+	return nil
+}
+
+// DeletePreset deletes a preset by ID
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) DeletePreset(id uint) error {
+	result := s.db.Delete(&Preset{}, id)
+	if result.Error != nil {
+		return fmt.Errorf("failed to delete preset: %w", result.Error)
+	}
+	return nil
+}
+
+// GetActivePreset retrieves the active preset for a user and API type
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) GetActivePreset(userID *int64, apiType string) (*Preset, error) {
+	var preset Preset
+	query := s.db.Where("is_active = ? AND api_type = ?", true, apiType)
+
+	if userID != nil {
+		query = query.Where("user_id = ?", *userID)
+	} else {
+		query = query.Where("user_id IS NULL")
+	}
+
+	result := query.First(&preset)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, nil // No active preset
+		}
+		return nil, fmt.Errorf("failed to get active preset: %w", result.Error)
+	}
+
+	return &preset, nil
+}
+
+// ActivatePreset activates a preset and deactivates others of the same API type
+// Uses transaction to ensure atomicity and GORM's parameterized queries
+func (s *GORMStorage) ActivatePreset(userID *int64, presetID uint) error {
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		// Get the preset to find its API type
+		var preset Preset
+		if err := tx.First(&preset, presetID).Error; err != nil {
+			return fmt.Errorf("failed to find preset: %w", err)
+		}
+
+		// Deactivate all presets for this user and API type
+		query := tx.Model(&Preset{}).Where("api_type = ?", preset.APIType)
+		if userID != nil {
+			query = query.Where("user_id = ?", *userID)
+		} else {
+			query = query.Where("user_id IS NULL")
+		}
+
+		if err := query.Update("is_active", false).Error; err != nil {
+			return fmt.Errorf("failed to deactivate presets: %w", err)
+		}
+
+		// Activate the specified preset
+		if err := tx.Model(&Preset{}).Where("id = ?", presetID).Update("is_active", true).Error; err != nil {
+			return fmt.Errorf("failed to activate preset: %w", err)
+		}
+
+		return nil
+	})
+}
+
+// Regex Pattern Operations
+
+// CreateRegexPattern creates a new regex pattern
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) CreateRegexPattern(pattern *RegexPattern) error {
+	result := s.db.Create(pattern)
+	if result.Error != nil {
+		return fmt.Errorf("failed to create regex pattern: %w", result.Error)
+	}
+	return nil
+}
+
+// GetRegexPattern retrieves a regex pattern by ID
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) GetRegexPattern(id uint) (*RegexPattern, error) {
+	var pattern RegexPattern
+	result := s.db.First(&pattern, id)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("regex pattern not found")
+		}
+		return nil, fmt.Errorf("failed to get regex pattern: %w", result.Error)
+	}
+	return &pattern, nil
+}
+
+// ListRegexPatterns lists all regex patterns for a user and type (or global if userID is nil)
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) ListRegexPatterns(userID *int64, patternType string) ([]*RegexPattern, error) {
+	var patterns []*RegexPattern
+	query := s.db
+
+	if userID != nil {
+		// Get user's patterns and global patterns
+		query = query.Where("user_id = ? OR user_id IS NULL", *userID)
+	} else {
+		// Get only global patterns
+		query = query.Where("user_id IS NULL")
+	}
+
+	// Filter by type if specified
+	if patternType != "" {
+		query = query.Where("type = ?", patternType)
+	}
+
+	result := query.Order("`order` ASC").Find(&patterns)
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to list regex patterns: %w", result.Error)
+	}
+
+	return patterns, nil
+}
+
+// UpdateRegexPattern updates an existing regex pattern
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) UpdateRegexPattern(pattern *RegexPattern) error {
+	result := s.db.Save(pattern)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update regex pattern: %w", result.Error)
+	}
+	return nil
+}
+
+// DeleteRegexPattern deletes a regex pattern by ID
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) DeleteRegexPattern(id uint) error {
+	result := s.db.Delete(&RegexPattern{}, id)
+	if result.Error != nil {
+		return fmt.Errorf("failed to delete regex pattern: %w", result.Error)
+	}
+	return nil
+}
+
+// Login Token Operations
+
+// CreateLoginToken creates a new login token
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) CreateLoginToken(token *LoginToken) error {
+	// Delete any existing token for this user first
+	if err := s.DeleteLoginToken(token.UserID); err != nil {
+		return fmt.Errorf("failed to delete existing token: %w", err)
+	}
+
+	result := s.db.Create(token)
+	if result.Error != nil {
+		return fmt.Errorf("failed to create login token: %w", result.Error)
+	}
+	return nil
+}
+
+// ValidateLoginToken validates a login token for a user
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) ValidateLoginToken(userID int64, token string) (bool, error) {
+	var loginToken LoginToken
+	result := s.db.Where("user_id = ? AND token = ? AND expires_at > ?", userID, token, time.Now()).First(&loginToken)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return false, nil // Token not found or expired
+		}
+		return false, fmt.Errorf("failed to validate login token: %w", result.Error)
+	}
+	return true, nil
+}
+
+// DeleteLoginToken deletes a login token for a user
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) DeleteLoginToken(userID int64) error {
+	result := s.db.Where("user_id = ?", userID).Delete(&LoginToken{})
+	if result.Error != nil {
+		return fmt.Errorf("failed to delete login token: %w", result.Error)
+	}
+	return nil
+}
+
+// CleanupExpiredTokens removes expired login tokens
+// Uses GORM's parameterized queries to prevent SQL injection
+func (s *GORMStorage) CleanupExpiredTokens() error {
+	result := s.db.Where("expires_at < ?", time.Now()).Delete(&LoginToken{})
+	if result.Error != nil {
+		return fmt.Errorf("failed to cleanup expired tokens: %w", result.Error)
+	}
 	return nil
 }
 
@@ -374,4 +926,28 @@ func (s *GORMStorage) cleanupLoop() {
 			_ = err
 		}
 	}
+}
+
+// UpdateRegexPatternStatus updates the enabled status of a regex pattern
+func (s *GORMStorage) UpdateRegexPatternStatus(id uint, enabled bool) error {
+	result := s.db.Model(&RegexPattern{}).Where("id = ?", id).Update("enabled", enabled)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update regex pattern status: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// UpdateWorldBookEntryStatus updates the enabled status of a world book entry
+func (s *GORMStorage) UpdateWorldBookEntryStatus(id uint, enabled bool) error {
+	result := s.db.Model(&WorldBookEntry{}).Where("id = ?", id).Update("enabled", enabled)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update world book entry status: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
 }

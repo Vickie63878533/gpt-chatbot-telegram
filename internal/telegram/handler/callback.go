@@ -340,7 +340,7 @@ func (h *ModelListHandler) createKeyboard(models []string, agentName string, pag
 		tgbotapi.NewInlineKeyboardButtonData("<", fmt.Sprintf("%s%s", h.prefix, toJSON([]interface{}{agentName, int(math.Max(0, float64(page-1)))}))),
 		tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%d/%d", page+1, maxPage), fmt.Sprintf("%s%s", h.prefix, toJSON([]interface{}{agentName, page}))),
 		tgbotapi.NewInlineKeyboardButtonData(">", fmt.Sprintf("%s%s", h.prefix, toJSON([]interface{}{agentName, int(math.Min(float64(page+1), float64(maxPage-1)))}))),
-		tgbotapi.NewInlineKeyboardButtonData("‚á§", h.agentListPrefix),
+		tgbotapi.NewInlineKeyboardButtonData("‚á?, h.agentListPrefix),
 	}
 	rows = append(rows, navRow)
 
@@ -448,7 +448,7 @@ func (h *ModelChangeHandler) Handle(query *tgbotapi.CallbackQuery, data string, 
 
 		if !canModify {
 			// Send error message
-			text := "‚ùå User settings are disabled. Only administrators can modify configuration."
+			text := "‚ù?User settings are disabled. Only administrators can modify configuration."
 			edit := tgbotapi.NewEditMessageText(
 				query.Message.Chat.ID,
 				query.Message.MessageID,

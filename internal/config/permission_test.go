@@ -66,6 +66,156 @@ func (m *MockStorage) Close() error {
 	return nil
 }
 
+// SillyTavern Character Card methods
+func (m *MockStorage) CreateCharacterCard(card *storage.CharacterCard) error {
+	return nil
+}
+
+func (m *MockStorage) GetCharacterCard(userID *int64, cardID uint) (*storage.CharacterCard, error) {
+	return nil, nil
+}
+
+func (m *MockStorage) ListCharacterCards(userID *int64) ([]*storage.CharacterCard, error) {
+	return []*storage.CharacterCard{}, nil
+}
+
+func (m *MockStorage) UpdateCharacterCard(card *storage.CharacterCard) error {
+	return nil
+}
+
+func (m *MockStorage) DeleteCharacterCard(userID *int64, cardID uint) error {
+	return nil
+}
+
+func (m *MockStorage) GetActiveCharacterCard(userID *int64) (*storage.CharacterCard, error) {
+	return nil, nil
+}
+
+func (m *MockStorage) ActivateCharacterCard(userID *int64, cardID uint) error {
+	return nil
+}
+
+// SillyTavern World Book methods
+func (m *MockStorage) CreateWorldBook(book *storage.WorldBook) error {
+	return nil
+}
+
+func (m *MockStorage) GetWorldBook(userID *int64, bookID uint) (*storage.WorldBook, error) {
+	return nil, nil
+}
+
+func (m *MockStorage) ListWorldBooks(userID *int64) ([]*storage.WorldBook, error) {
+	return []*storage.WorldBook{}, nil
+}
+
+func (m *MockStorage) UpdateWorldBook(book *storage.WorldBook) error {
+	return nil
+}
+
+func (m *MockStorage) DeleteWorldBook(userID *int64, bookID uint) error {
+	return nil
+}
+
+func (m *MockStorage) GetActiveWorldBook(userID *int64) (*storage.WorldBook, error) {
+	return nil, nil
+}
+
+func (m *MockStorage) ActivateWorldBook(userID *int64, bookID uint) error {
+	return nil
+}
+
+// SillyTavern World Book Entry methods
+func (m *MockStorage) CreateWorldBookEntry(entry *storage.WorldBookEntry) error {
+	return nil
+}
+
+func (m *MockStorage) GetWorldBookEntry(entryID uint) (*storage.WorldBookEntry, error) {
+	return nil, nil
+}
+
+func (m *MockStorage) ListWorldBookEntries(bookID uint) ([]*storage.WorldBookEntry, error) {
+	return []*storage.WorldBookEntry{}, nil
+}
+
+func (m *MockStorage) UpdateWorldBookEntry(entry *storage.WorldBookEntry) error {
+	return nil
+}
+
+func (m *MockStorage) DeleteWorldBookEntry(entryID uint) error {
+	return nil
+}
+
+// SillyTavern Preset methods
+func (m *MockStorage) CreatePreset(preset *storage.Preset) error {
+	return nil
+}
+
+func (m *MockStorage) GetPreset(userID *int64, presetID uint) (*storage.Preset, error) {
+	return nil, nil
+}
+
+func (m *MockStorage) ListPresets(userID *int64) ([]*storage.Preset, error) {
+	return []*storage.Preset{}, nil
+}
+
+func (m *MockStorage) UpdatePreset(preset *storage.Preset) error {
+	return nil
+}
+
+func (m *MockStorage) DeletePreset(userID *int64, presetID uint) error {
+	return nil
+}
+
+func (m *MockStorage) GetActivePreset(userID *int64, apiType string) (*storage.Preset, error) {
+	return nil, nil
+}
+
+func (m *MockStorage) ActivatePreset(userID *int64, presetID uint) error {
+	return nil
+}
+
+// SillyTavern Regex Pattern methods
+func (m *MockStorage) CreateRegexPattern(pattern *storage.RegexPattern) error {
+	return nil
+}
+
+func (m *MockStorage) GetRegexPattern(userID *int64, patternID uint) (*storage.RegexPattern, error) {
+	return nil, nil
+}
+
+func (m *MockStorage) ListRegexPatterns(userID *int64, patternType string) ([]*storage.RegexPattern, error) {
+	return []*storage.RegexPattern{}, nil
+}
+
+func (m *MockStorage) UpdateRegexPattern(pattern *storage.RegexPattern) error {
+	return nil
+}
+
+func (m *MockStorage) DeleteRegexPattern(userID *int64, patternID uint) error {
+	return nil
+}
+
+// SillyTavern Login Token methods
+func (m *MockStorage) CreateLoginToken(token *storage.LoginToken) error {
+	return nil
+}
+
+func (m *MockStorage) ValidateLoginToken(userID int64, token string) (bool, error) {
+	return false, nil
+}
+
+func (m *MockStorage) DeleteLoginToken(userID int64) error {
+	return nil
+}
+
+func (m *MockStorage) CleanupExpiredTokens() error {
+	return nil
+}
+
+func (m *MockStorage) DeleteAllChatHistory() error {
+	return nil
+}
+
 // MockBotAPI is a mock implementation of the bot API for testing
 type MockBotAPI struct {
 	admins map[int64][]storage.ChatMember

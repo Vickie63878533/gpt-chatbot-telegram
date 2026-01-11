@@ -32,7 +32,7 @@ func TestIntegrationSuite(t *testing.T) {
 }
 
 // TestGoVersionImprovements tests the new features added in go-version-improvements spec
-// Task 13: 集成测试和验证
+// Task 13: Integration tests and verification
 func TestGoVersionImprovements(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration tests in short mode")

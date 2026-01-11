@@ -36,6 +36,33 @@ func TestLoadConfig(t *testing.T) {
 	if cfg.Language != "zh-cn" {
 		t.Errorf("Expected Language to be 'zh-cn', got '%s'", cfg.Language)
 	}
+
+	// Check SillyTavern context configuration defaults
+	if cfg.MaxContextLength != 8000 {
+		t.Errorf("Expected MaxContextLength to be 8000, got %d", cfg.MaxContextLength)
+	}
+
+	if cfg.SummaryThreshold != 0.8 {
+		t.Errorf("Expected SummaryThreshold to be 0.8, got %f", cfg.SummaryThreshold)
+	}
+
+	if cfg.MinRecentPairs != 2 {
+		t.Errorf("Expected MinRecentPairs to be 2, got %d", cfg.MinRecentPairs)
+	}
+
+	// Check Manager configuration defaults
+	if cfg.ManagerPort != 8081 {
+		t.Errorf("Expected ManagerPort to be 8081, got %d", cfg.ManagerPort)
+	}
+
+	if !cfg.ManagerEnabled {
+		t.Error("Expected ManagerEnabled to be true")
+	}
+
+	// Check Telegraph configuration default
+	if !cfg.TelegraphEnabled {
+		t.Error("Expected TelegraphEnabled to be true")
+	}
 }
 
 func TestValidate(t *testing.T) {
@@ -52,6 +79,10 @@ func TestValidate(t *testing.T) {
 				DefaultParseMode:          "Markdown",
 				TelegramImageTransferMode: "base64",
 				Language:                  "zh-cn",
+				MaxContextLength:          8000,
+				SummaryThreshold:          0.8,
+				MinRecentPairs:            2,
+				ManagerPort:               8081,
 			},
 			wantErr: false,
 		},
@@ -62,6 +93,10 @@ func TestValidate(t *testing.T) {
 				DefaultParseMode:          "Markdown",
 				TelegramImageTransferMode: "base64",
 				Language:                  "zh-cn",
+				MaxContextLength:          8000,
+				SummaryThreshold:          0.8,
+				MinRecentPairs:            2,
+				ManagerPort:               8081,
 			},
 			wantErr: true,
 		},
@@ -73,6 +108,10 @@ func TestValidate(t *testing.T) {
 				DefaultParseMode:          "Markdown",
 				TelegramImageTransferMode: "base64",
 				Language:                  "zh-cn",
+				MaxContextLength:          8000,
+				SummaryThreshold:          0.8,
+				MinRecentPairs:            2,
+				ManagerPort:               8081,
 			},
 			wantErr: true,
 		},
@@ -84,6 +123,10 @@ func TestValidate(t *testing.T) {
 				DefaultParseMode:          "Invalid",
 				TelegramImageTransferMode: "base64",
 				Language:                  "zh-cn",
+				MaxContextLength:          8000,
+				SummaryThreshold:          0.8,
+				MinRecentPairs:            2,
+				ManagerPort:               8081,
 			},
 			wantErr: true,
 		},
@@ -95,6 +138,10 @@ func TestValidate(t *testing.T) {
 				DefaultParseMode:          "Markdown",
 				TelegramImageTransferMode: "invalid",
 				Language:                  "zh-cn",
+				MaxContextLength:          8000,
+				SummaryThreshold:          0.8,
+				MinRecentPairs:            2,
+				ManagerPort:               8081,
 			},
 			wantErr: true,
 		},
@@ -106,6 +153,100 @@ func TestValidate(t *testing.T) {
 				DefaultParseMode:          "Markdown",
 				TelegramImageTransferMode: "base64",
 				Language:                  "invalid",
+				MaxContextLength:          8000,
+				SummaryThreshold:          0.8,
+				MinRecentPairs:            2,
+				ManagerPort:               8081,
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid max context length",
+			config: &Config{
+				TelegramAvailableTokens:   []string{"123456:ABC"},
+				Port:                      8080,
+				DefaultParseMode:          "Markdown",
+				TelegramImageTransferMode: "base64",
+				Language:                  "zh-cn",
+				MaxContextLength:          0,
+				SummaryThreshold:          0.8,
+				MinRecentPairs:            2,
+				ManagerPort:               8081,
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid summary threshold - too low",
+			config: &Config{
+				TelegramAvailableTokens:   []string{"123456:ABC"},
+				Port:                      8080,
+				DefaultParseMode:          "Markdown",
+				TelegramImageTransferMode: "base64",
+				Language:                  "zh-cn",
+				MaxContextLength:          8000,
+				SummaryThreshold:          -0.1,
+				MinRecentPairs:            2,
+				ManagerPort:               8081,
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid summary threshold - too high",
+			config: &Config{
+				TelegramAvailableTokens:   []string{"123456:ABC"},
+				Port:                      8080,
+				DefaultParseMode:          "Markdown",
+				TelegramImageTransferMode: "base64",
+				Language:                  "zh-cn",
+				MaxContextLength:          8000,
+				SummaryThreshold:          1.5,
+				MinRecentPairs:            2,
+				ManagerPort:               8081,
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid min recent pairs",
+			config: &Config{
+				TelegramAvailableTokens:   []string{"123456:ABC"},
+				Port:                      8080,
+				DefaultParseMode:          "Markdown",
+				TelegramImageTransferMode: "base64",
+				Language:                  "zh-cn",
+				MaxContextLength:          8000,
+				SummaryThreshold:          0.8,
+				MinRecentPairs:            -1,
+				ManagerPort:               8081,
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid manager port - too low",
+			config: &Config{
+				TelegramAvailableTokens:   []string{"123456:ABC"},
+				Port:                      8080,
+				DefaultParseMode:          "Markdown",
+				TelegramImageTransferMode: "base64",
+				Language:                  "zh-cn",
+				MaxContextLength:          8000,
+				SummaryThreshold:          0.8,
+				MinRecentPairs:            2,
+				ManagerPort:               0,
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid manager port - too high",
+			config: &Config{
+				TelegramAvailableTokens:   []string{"123456:ABC"},
+				Port:                      8080,
+				DefaultParseMode:          "Markdown",
+				TelegramImageTransferMode: "base64",
+				Language:                  "zh-cn",
+				MaxContextLength:          8000,
+				SummaryThreshold:          0.8,
+				MinRecentPairs:            2,
+				ManagerPort:               70000,
 			},
 			wantErr: true,
 		},
@@ -169,5 +310,70 @@ func TestGetEnvHelpers(t *testing.T) {
 
 	if got := getEnvSlice("NONEXISTENT"); len(got) != 0 {
 		t.Errorf("getEnvSlice() = %v, want []", got)
+	}
+
+	// Test getEnvFloat64
+	os.Setenv("TEST_FLOAT", "0.75")
+	defer os.Unsetenv("TEST_FLOAT")
+
+	if got := getEnvFloat64("TEST_FLOAT", 0.0); got != 0.75 {
+		t.Errorf("getEnvFloat64() = %v, want %v", got, 0.75)
+	}
+
+	if got := getEnvFloat64("NONEXISTENT", 1.5); got != 1.5 {
+		t.Errorf("getEnvFloat64() = %v, want %v", got, 1.5)
+	}
+}
+
+func TestSillyTavernConfigFromEnv(t *testing.T) {
+	// Set required environment variable
+	os.Setenv("TELEGRAM_AVAILABLE_TOKENS", "123456:ABC-DEF")
+	defer os.Unsetenv("TELEGRAM_AVAILABLE_TOKENS")
+
+	// Set SillyTavern configuration
+	os.Setenv("MAX_CONTEXT_LENGTH", "10000")
+	os.Setenv("SUMMARY_THRESHOLD", "0.75")
+	os.Setenv("MIN_RECENT_PAIRS", "3")
+	os.Setenv("MANAGER_PORT", "9090")
+	os.Setenv("MANAGER_ENABLED", "false")
+	os.Setenv("TELEGRAPH_ENABLED", "false")
+
+	defer func() {
+		os.Unsetenv("MAX_CONTEXT_LENGTH")
+		os.Unsetenv("SUMMARY_THRESHOLD")
+		os.Unsetenv("MIN_RECENT_PAIRS")
+		os.Unsetenv("MANAGER_PORT")
+		os.Unsetenv("MANAGER_ENABLED")
+		os.Unsetenv("TELEGRAPH_ENABLED")
+	}()
+
+	cfg, err := LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig() failed: %v", err)
+	}
+
+	// Verify custom values are loaded
+	if cfg.MaxContextLength != 10000 {
+		t.Errorf("Expected MaxContextLength to be 10000, got %d", cfg.MaxContextLength)
+	}
+
+	if cfg.SummaryThreshold != 0.75 {
+		t.Errorf("Expected SummaryThreshold to be 0.75, got %f", cfg.SummaryThreshold)
+	}
+
+	if cfg.MinRecentPairs != 3 {
+		t.Errorf("Expected MinRecentPairs to be 3, got %d", cfg.MinRecentPairs)
+	}
+
+	if cfg.ManagerPort != 9090 {
+		t.Errorf("Expected ManagerPort to be 9090, got %d", cfg.ManagerPort)
+	}
+
+	if cfg.ManagerEnabled {
+		t.Error("Expected ManagerEnabled to be false")
+	}
+
+	if cfg.TelegraphEnabled {
+		t.Error("Expected TelegraphEnabled to be false")
 	}
 }

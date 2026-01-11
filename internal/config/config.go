@@ -149,6 +149,26 @@ type Config struct {
 	// User Settings Permission Control
 	EnableUserSetting bool     `env:"ENABLE_USER_SETTING" default:"true"`
 	ChatAdminKey      []string `env:"CHAT_ADMIN_KEY"`
+
+	// SillyTavern Context Configuration
+	MaxContextLength int     `env:"MAX_CONTEXT_LENGTH" default:"8000"`
+	SummaryThreshold float64 `env:"SUMMARY_THRESHOLD" default:"0.8"`
+	MinRecentPairs   int     `env:"MIN_RECENT_PAIRS" default:"2"`
+
+	// Manager Configuration
+	ManagerPort    int  `env:"MANAGER_PORT" default:"8081"`
+	ManagerEnabled bool `env:"MANAGER_ENABLED" default:"true"`
+
+	// Telegraph Configuration
+	TelegraphEnabled bool `env:"TELEGRAPH_ENABLED" default:"true"`
+
+	// SillyTavern Components (initialized at runtime, not from env)
+	SillyTavernCharacterManager interface{}
+	SillyTavernWorldBookManager interface{}
+	SillyTavernPresetManager    interface{}
+	SillyTavernRegexProcessor   interface{}
+	SillyTavernRequestBuilder   interface{}
+	SillyTavernContextManager   interface{}
 }
 
 // LoadConfig loads configuration from environment variables
@@ -298,6 +318,18 @@ func LoadConfig() (*Config, error) {
 	cfg.EnableUserSetting = getEnvBool("ENABLE_USER_SETTING", true)
 	cfg.ChatAdminKey = getEnvSlice("CHAT_ADMIN_KEY")
 
+	// SillyTavern Context Configuration
+	cfg.MaxContextLength = getEnvInt("MAX_CONTEXT_LENGTH", 8000)
+	cfg.SummaryThreshold = getEnvFloat64("SUMMARY_THRESHOLD", 0.8)
+	cfg.MinRecentPairs = getEnvInt("MIN_RECENT_PAIRS", 2)
+
+	// Manager Configuration
+	cfg.ManagerPort = getEnvInt("MANAGER_PORT", 8081)
+	cfg.ManagerEnabled = getEnvBool("MANAGER_ENABLED", true)
+
+	// Telegraph Configuration
+	cfg.TelegraphEnabled = getEnvBool("TELEGRAPH_ENABLED", true)
+
 	// Validate configuration
 	if err := Validate(cfg); err != nil {
 		return nil, err
@@ -339,6 +371,24 @@ func Validate(cfg *Config) error {
 		return fmt.Errorf("LANGUAGE must be one of: zh-cn, en, pt, zh-hant, got '%s'", cfg.Language)
 	}
 
+	// Validate SillyTavern context configuration
+	if cfg.MaxContextLength < 1 {
+		return fmt.Errorf("MAX_CONTEXT_LENGTH must be greater than 0, got %d", cfg.MaxContextLength)
+	}
+
+	if cfg.SummaryThreshold < 0.0 || cfg.SummaryThreshold > 1.0 {
+		return fmt.Errorf("SUMMARY_THRESHOLD must be between 0.0 and 1.0, got %f", cfg.SummaryThreshold)
+	}
+
+	if cfg.MinRecentPairs < 0 {
+		return fmt.Errorf("MIN_RECENT_PAIRS must be non-negative, got %d", cfg.MinRecentPairs)
+	}
+
+	// Validate Manager configuration
+	if cfg.ManagerPort < 1 || cfg.ManagerPort > 65535 {
+		return fmt.Errorf("MANAGER_PORT must be between 1 and 65535, got %d", cfg.ManagerPort)
+	}
+
 	return nil
 }
 
@@ -364,6 +414,15 @@ func getEnvInt64(key string, defaultValue int64) int64 {
 	if value := os.Getenv(key); value != "" {
 		if intValue, err := strconv.ParseInt(value, 10, 64); err == nil {
 			return intValue
+		}
+	}
+	return defaultValue
+}
+
+func getEnvFloat64(key string, defaultValue float64) float64 {
+	if value := os.Getenv(key); value != "" {
+		if floatValue, err := strconv.ParseFloat(value, 64); err == nil {
+			return floatValue
 		}
 	}
 	return defaultValue

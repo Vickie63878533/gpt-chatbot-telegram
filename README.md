@@ -4,6 +4,7 @@
 
 ## 功能特性
 
+### 核心功能
 - 支持多种 AI 提供商（OpenAI、Azure、Gemini、Anthropic、Workers AI 等）
 - 支持流式响应输出
 - 支持图片生成和图片识别
@@ -13,6 +14,15 @@
 - 支持多种数据库后端（SQLite、MySQL、PostgreSQL）
 - 支持用户设置权限控制
 - 支持 Docker 部署
+
+### SillyTavern 集成
+- **角色卡系统**：支持 SillyTavern V2 格式的角色卡，自定义 AI 个性和行为
+- **世界书**：基于关键词触发的上下文知识注入系统
+- **预设管理**：管理不同 AI 提供商的参数配置模板
+- **正则处理**：输入/输出文本转换和格式化
+- **Web 管理器**：基于 Web 的管理界面，方便上传和管理 SillyTavern 资源
+- **智能上下文管理**：自动摘要长对话，保持上下文在模型限制内
+- **对话分享**：通过 Telegraph 分享对话内容
 
 ## 快速开始
 
@@ -40,12 +50,25 @@ export DB_PATH="./data/bot.db"
 # 或使用其他数据库
 # export DSN="mysql://user:password@tcp(localhost:3306)/dbname"
 # export DSN="postgres://user:password@localhost:5432/dbname"
+
+# SillyTavern 集成配置（可选）
+export MANAGER_ENABLED=true
+export MANAGER_PORT=8081
+export TELEGRAPH_ENABLED=true
+export MAX_CONTEXT_LENGTH=8000
+export SUMMARY_THRESHOLD=0.8
+export MIN_RECENT_PAIRS=2
 ```
 
 5. 运行程序：
 ```bash
 go run ./cmd/bot
 ```
+
+6. （可选）访问 Web 管理器：
+   - 在 Telegram 私聊中发送 `/login` 获取登录凭据
+   - 打开浏览器访问 `http://localhost:8081`
+   - 使用获取的凭据登录并管理角色卡、世界书等
 
 ### Docker 部署
 
@@ -58,10 +81,25 @@ docker build -t telegram-bot-go .
 ```bash
 docker run -d \
   -p 8080:8080 \
+  -p 8081:8081 \
   -e TELEGRAM_AVAILABLE_TOKENS="your_bot_token" \
   -e OPENAI_API_KEY="your_openai_key" \
+  -e MANAGER_ENABLED=true \
+  -e MANAGER_PORT=8081 \
   -v $(pwd)/data:/root/data \
   telegram-bot-go
+```
+
+3. 使用 docker-compose（推荐）：
+```bash
+# 编辑 .env 文件配置环境变量
+cp .env.example .env
+
+# 启动服务
+docker-compose up -d
+
+# 查看日志
+docker-compose logs -f
 ```
 
 ## 环境变量配置
@@ -114,6 +152,22 @@ export CHAT_ADMIN_KEY="123456789,987654321"
 - 普通用户看不到配置相关命令
 - 所有用户使用全局配置
 
+### SillyTavern 集成配置
+
+```bash
+# Web 管理器
+export MANAGER_ENABLED=true          # 是否启用 Web 管理器
+export MANAGER_PORT=8081             # 管理器端口
+
+# Telegraph 分享
+export TELEGRAPH_ENABLED=true        # 是否启用对话分享功能
+
+# 上下文管理
+export MAX_CONTEXT_LENGTH=8000       # 最大上下文长度（tokens）
+export SUMMARY_THRESHOLD=0.8         # 触发摘要的阈值（0.0-1.0）
+export MIN_RECENT_PAIRS=2            # 保留的最小最近消息对数
+```
+
 ### 其他可选配置
 
 - `AI_PROVIDER`: AI 提供商（默认：auto）
@@ -123,6 +177,68 @@ export CHAT_ADMIN_KEY="123456789,987654321"
 - `SAFE_MODE`: 是否启用安全模式（默认：true）
 
 更多配置选项请参考 [配置文档](doc/CONFIG.md)。
+
+## 使用指南
+
+### 基本命令
+
+- `/start` - 开始使用 bot
+- `/help` - 查看帮助信息
+- `/clear` - 清除当前对话上下文（创建截断标记）
+- `/config` - 配置 bot 参数（需要权限）
+
+### SillyTavern 功能
+
+#### 1. 登录 Web 管理器
+
+在 Telegram 私聊中发送：
+```
+/login
+```
+
+Bot 会返回用户名和密码，有效期 24 小时。使用这些凭据登录 Web 管理器（默认地址：`http://localhost:8081`）。
+
+#### 2. 管理角色卡
+
+在 Web 管理器中：
+- 上传 SillyTavern V2 格式的角色卡（PNG 文件）
+- 激活角色卡以应用到对话中
+- 编辑或删除现有角色卡
+
+#### 3. 管理世界书
+
+在 Web 管理器中：
+- 上传世界书 JSON 文件
+- 激活世界书以启用上下文注入
+- 编辑世界书条目，启用/禁用特定条目
+
+#### 4. 管理预设
+
+在 Web 管理器中：
+- 创建或上传预设配置
+- 为不同 AI 提供商设置不同的参数
+- 激活预设以应用到对话中
+
+#### 5. 分享对话
+
+在 Telegram 中发送：
+```
+/share
+```
+
+Bot 会将当前对话发布到 Telegraph 并返回分享链接。
+
+#### 6. 清除所有对话（仅管理员）
+
+```
+/clear_all_chat
+```
+
+删除所有用户的对话历史（需要管理员权限）。
+
+## 迁移指南
+
+如果你从旧版本升级，请参考 [迁移文档](doc/MIGRATION.md) 了解详细的迁移步骤和注意事项。
 
 ## 项目结构
 
